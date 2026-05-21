@@ -18,6 +18,8 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 # pyrefly: ignore [missing-import]
 from docx import Document
+# pyrefly: ignore [missing-import]
+from docx.oxml.ns import qn  # noqa: E402 — pyrefly: ignore [missing-import]
 
 from app.schemas.schemas import InvoiceCreate, InvoiceItemCreate, TaxMode
 from app.services.docx.generator import generate_docx_invoice
@@ -241,13 +243,14 @@ class TestDocxSecurity:
 # Formatting Preservation Tests
 # ═══════════════════════════════════════════════════════════
 
+# pyrefly: ignore [missing-import]
+from docx.oxml.ns import qn
+
 class TestDocxFormatting:
     """Verify that template formatting is preserved."""
 
     def test_cell_borders_preserved(self, output_doc):
         """Check that item row cells have border XML (tcBorders) after generation."""
-        # pyrefly: ignore [missing-import]
-        from docx.oxml.ns import qn
         table = output_doc.tables[0]
         # Check a few item rows (rows after header)
         # The exact row indices depend on the template, but we check for tcBorders
@@ -267,8 +270,6 @@ class TestDocxFormatting:
 
     def test_cell_widths_preserved(self, output_doc):
         """Check that cell widths (tcW) are preserved."""
-        # pyrefly: ignore [missing-import]
-        from docx.oxml.ns import qn
         table = output_doc.tables[0]
         widths_found = 0
         for row in table.rows:
