@@ -331,7 +331,7 @@ export function ReviewStep() {
                     <EditableCell value={item.qty} field="qty" index={idx} type="number" />
                   </td>
                   <td style={{ padding: '8px 10px', minWidth: 70 }}>
-                    <EditableCell value={item.unit} field="unit" index={idx} />
+                    <EditableCell value={item.unit || ''} field="unit" index={idx} />
                   </td>
                   <td style={{ padding: '8px 10px', minWidth: 100 }}>
                     <EditableCell value={item.purchase_rate} field="purchase_rate" index={idx} type="number" />
