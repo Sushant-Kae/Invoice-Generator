@@ -24,8 +24,8 @@ The system maintains two strict data layers:
 ### 1. Database Setup
 ```bash
 psql postgres -c "CREATE DATABASE invoice_generator;"
-psql postgres -c "CREATE USER \"SHAH_ADMIN\" WITH PASSWORD 'SHAHENTERPRISES@63';"
-psql invoice_generator -c "GRANT ALL ON SCHEMA public TO \"SHAH_ADMIN\";"
+psql postgres -c "CREATE USER \"Your Username\" WITH PASSWORD 'Your Password Here';"
+psql invoice_generator -c "GRANT ALL ON SCHEMA public TO \"Your Username\";"
 ```
 
 ### 2. Backend
@@ -214,15 +214,3 @@ brew install --cask libreoffice
 Then use the "Generate PDF" button in the Done step.
 
 ---
-
-## 🔐 Environment Variables (backend/.env)
-
-```
-DATABASE_URL=postgresql://SHAH_ADMIN:SHAHENTERPRISES%4063@localhost:5432/invoice_generator
-SECRET_KEY=<change-in-production>
-UPLOAD_DIR=uploads
-GENERATED_DIR=generated
-TEMPLATE_DIR=templates
-MAX_UPLOAD_SIZE_MB=20
-CORS_ORIGINS=http://localhost:3000
-```
