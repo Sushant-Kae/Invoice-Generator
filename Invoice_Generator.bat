@@ -26,6 +26,6 @@ start cmd /k "npm start"
 :: -----------------------------
 timeout /t 8 /nobreak > nul
 
-start http://localhost:3000
+start http://localhost:3001
 
 exit
