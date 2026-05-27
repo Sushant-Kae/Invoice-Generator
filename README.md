@@ -169,22 +169,6 @@ Add these to `invoice_template.docx`:
 
 ---
 
-## 🌐 API Endpoints
-
-| Method | Endpoint | Description |
-|---|---|---|
-| POST | `/api/upload` | Upload manufacturer invoice |
-| POST | `/api/extract?file_id=...` | Run extraction pipeline |
-| POST | `/api/apply-margin` | Calculate selling rates |
-| POST | `/api/invoices` | Create invoice |
-| GET | `/api/invoice/:id` | Get invoice details |
-| PUT | `/api/invoice/:id` | Update invoice |
-| DELETE | `/api/invoice/:id` | Delete invoice |
-| POST | `/api/generate` | Generate DOCX + PDF |
-| GET | `/api/history` | Invoice list |
-| GET | `/api/dashboard` | Dashboard statistics |
-| GET | `/api/buyers` | Buyer list |
-
 ---
 
 ## 🐳 Docker
