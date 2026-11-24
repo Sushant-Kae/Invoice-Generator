@@ -176,6 +176,8 @@ class InvoiceListItem(BaseModel):
     estimated_profit: float
     status: str
     created_at: Optional[datetime]
+    docx_filename: Optional[str] = None
+    pdf_filename: Optional[str] = None
 
     class Config:
         from_attributes = True

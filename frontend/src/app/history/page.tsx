@@ -5,21 +5,19 @@ import Link from 'next/link'
 import { FileText, Download, Plus, Search } from 'lucide-react'
 import { useState } from 'react'
 import { AppLayout } from '@/components/layout/AppLayout'
-import { getInvoices } from '@/lib/api'
+import { getInvoiceDownloadUrl, getInvoices, type InvoiceListItem } from '@/lib/api'
 import { formatCurrency } from '@/lib/utils'
-
-const API_BASE = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api').replace('/api', '')
 
 export default function HistoryPage() {
   const [search, setSearch] = useState('')
 
-  const { data: invoices = [], isLoading } = useQuery({
+  const { data: invoices = [], isLoading } = useQuery<InvoiceListItem[]>({
     queryKey: ['invoices', 0, 100],
     queryFn: () => getInvoices(0, 100),
     retry: 1,
   })
 
-  const filtered = (invoices as any[]).filter(
+  const filtered = invoices.filter(
     (inv) =>
       inv.invoice_number.toLowerCase().includes(search.toLowerCase()) ||
       inv.buyer_name.toLowerCase().includes(search.toLowerCase())
@@ -88,7 +86,7 @@ export default function HistoryPage() {
                   </td>
                 </tr>
               ) : (
-                filtered.map((inv: any) => (
+                filtered.map((inv) => (
                   <tr key={inv.id} style={{ borderBottom: '1px solid var(--border-subtle)', transition: 'background 0.1s' }}
                     onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--bg-hover)')}
                     onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
@@ -96,7 +94,7 @@ export default function HistoryPage() {
                     <td style={{ padding: '11px 16px', fontWeight: 600, color: 'var(--accent)' }}>{inv.invoice_number}</td>
                     <td style={{ padding: '11px 16px' }}>{inv.buyer_name}</td>
                     <td style={{ padding: '11px 16px', color: 'var(--text-secondary)' }}>{inv.invoice_date}</td>
-                    <td style={{ padding: '11px 16px', color: 'var(--text-secondary)' }}>{inv.items?.length ?? '—'}</td>
+                    <td style={{ padding: '11px 16px', color: 'var(--text-secondary)' }}>—</td>
                     <td style={{ padding: '11px 16px', fontWeight: 600 }}>{formatCurrency(inv.total_amount)}</td>
                     <td style={{ padding: '11px 16px' }}>
                       <span style={{
@@ -110,12 +108,12 @@ export default function HistoryPage() {
                     <td style={{ padding: '11px 16px' }}>
                       <div style={{ display: 'flex', gap: 8 }}>
                         {inv.docx_filename && (
-                          <a href={`${API_BASE}/api/invoice/${inv.id}/download/docx`} download style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '4px 10px', background: 'var(--accent-muted)', color: 'var(--accent)', borderRadius: 4, textDecoration: 'none', fontSize: 11, fontWeight: 600 }}>
+                          <a href={getInvoiceDownloadUrl(inv.id, 'docx')} download style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '4px 10px', background: 'var(--accent-muted)', color: 'var(--accent)', borderRadius: 4, textDecoration: 'none', fontSize: 11, fontWeight: 600 }}>
                             <Download size={11} /> DOCX
                           </a>
                         )}
                         {inv.pdf_filename && (
-                          <a href={`${API_BASE}/api/invoice/${inv.id}/download/pdf`} download style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '4px 10px', background: 'var(--bg-hover)', color: 'var(--text-secondary)', borderRadius: 4, textDecoration: 'none', fontSize: 11, fontWeight: 600 }}>
+                          <a href={getInvoiceDownloadUrl(inv.id, 'pdf')} download style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '4px 10px', background: 'var(--bg-hover)', color: 'var(--text-secondary)', borderRadius: 4, textDecoration: 'none', fontSize: 11, fontWeight: 600 }}>
                             <Download size={11} /> PDF
                           </a>
                         )}

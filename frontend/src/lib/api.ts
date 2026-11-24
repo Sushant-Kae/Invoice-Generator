@@ -229,6 +229,8 @@ export interface InvoiceListItem {
   estimated_profit: number;
   status: string;
   created_at: string;
+  docx_filename?: string | null;
+  pdf_filename?: string | null;
 }
 
 export interface GenerateInvoiceResponse {
