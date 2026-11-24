@@ -8,6 +8,10 @@ frontend/.next/
 backend/uploads/
 backend/generated/
 
+# Private company invoice templates
+/backend/templates/invoice_template.docx
+/reference_files/invoice_template.docx
+
 # OS generated files
 .DS_Store
 Thumbs.db
