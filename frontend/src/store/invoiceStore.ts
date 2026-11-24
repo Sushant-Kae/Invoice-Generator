@@ -34,6 +34,7 @@ interface InvoiceStore {
   invoiceNumber: string
   invoiceDate: string
   buyerName: string
+  buyerId: number | null
   buyerGst: string
   taxMode: 'cgst_sgst' | 'igst' | 'none'
   cgstPercent: number
@@ -48,13 +49,20 @@ interface InvoiceStore {
 
   // Item editing
   updateItem: (index: number, field: keyof InvoiceItem, value: string | number) => void
+  addItem: () => void
   applyGlobalMargin: () => void
 
   // Generated invoice
   generatedInvoiceId: number | null
   docxUrl: string | null
   pdfUrl: string | null
-  setGeneratedResult: (invoiceId: number, docxUrl?: string, pdfUrl?: string) => void
+  generationWarning: string | null
+  setGeneratedResult: (
+    invoiceId: number,
+    docxUrl?: string,
+    pdfUrl?: string,
+    warning?: string
+  ) => void
 
   // Computed totals
   getSubtotal: () => number
@@ -91,6 +99,7 @@ const initialState = {
   invoiceNumber: `INV-${new Date().getFullYear()}-${String(Date.now()).slice(-4)}`,
   invoiceDate: today(),
   buyerName: '',
+  buyerId: null,
   buyerGst: '',
   taxMode: 'igst' as const,
   cgstPercent: 9,
@@ -100,6 +109,7 @@ const initialState = {
   generatedInvoiceId: null,
   docxUrl: null,
   pdfUrl: null,
+  generationWarning: null,
 }
 
 export const useInvoiceStore = create<InvoiceStore>((set, get) => ({
@@ -145,6 +155,25 @@ export const useInvoiceStore = create<InvoiceStore>((set, get) => ({
       return { extractedItems: items }
     }),
 
+  addItem: () =>
+    set((state) => ({
+      extractedItems: [
+        ...state.extractedItems,
+        {
+          sr_no: state.extractedItems.length + 1,
+          item_name: '',
+          hsn_code: null,
+          qty: 1,
+          unit: 'Nos',
+          purchase_rate: 0,
+          margin_percent: state.globalMargin,
+          selling_rate: 0,
+          amount: 0,
+          estimated_profit: 0,
+        },
+      ],
+    })),
+
   applyGlobalMargin: () =>
     set((state) => ({
       extractedItems: state.extractedItems.map((item) =>
@@ -152,8 +181,13 @@ export const useInvoiceStore = create<InvoiceStore>((set, get) => ({
       ),
     })),
 
-  setGeneratedResult: (invoiceId, docxUrl, pdfUrl) =>
-    set({ generatedInvoiceId: invoiceId, docxUrl: docxUrl ?? null, pdfUrl: pdfUrl ?? null }),
+  setGeneratedResult: (invoiceId, docxUrl, pdfUrl, generationWarning) =>
+    set({
+      generatedInvoiceId: invoiceId,
+      docxUrl: docxUrl ?? null,
+      pdfUrl: pdfUrl ?? null,
+      generationWarning: generationWarning ?? null,
+    }),
 
   getSubtotal: () =>
     get().extractedItems.reduce((sum, item) => sum + item.amount, 0),

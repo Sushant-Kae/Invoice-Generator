@@ -1,9 +1,10 @@
 'use client'
 
 import { useState } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import { ChevronLeft, FileCheck2, Loader2, AlertCircle } from 'lucide-react'
 import toast from 'react-hot-toast'
-import { createInvoice, generateInvoice } from '@/lib/api'
+import { createInvoice, generateInvoice, saveGeneratedInvoiceBuyer } from '@/lib/api'
 import type { InvoiceCreate } from '@/lib/api'
 import { useInvoiceStore } from '@/store/invoiceStore'
 import { formatCurrency } from '@/lib/utils'
@@ -11,10 +12,11 @@ import { formatCurrency } from '@/lib/utils'
 export function PreviewStep() {
   const [generating, setGenerating] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const queryClient = useQueryClient()
 
   const {
     extractedItems,
-    invoiceNumber, invoiceDate, buyerName, buyerGst,
+    invoiceNumber, invoiceDate, buyerName, buyerId, buyerGst,
     taxMode, cgstPercent, sgstPercent, igstPercent,
     getSubtotal, getTaxAmount, getTotalAmount,
     setGeneratedResult, setStep,
@@ -38,6 +40,7 @@ export function PreviewStep() {
         invoice_number: invoiceNumber,
         invoice_date: invoiceDate,
         buyer_name: buyerName,
+        buyer_id: buyerId ?? undefined,
         buyer_gst: buyerGst?.trim() || undefined,
         tax_mode: taxMode,
         cgst_percent: cgstPercent,
@@ -67,14 +70,33 @@ export function PreviewStep() {
         throw new Error(generated.message || 'Generation failed')
       }
 
+      let buyerSaveWarning: string | undefined
+      if (buyerId === null) {
+        try {
+          await saveGeneratedInvoiceBuyer(created.id, {
+            name: buyerName.trim(),
+            gst_number: buyerGst.trim() || undefined,
+          })
+          void queryClient.invalidateQueries({ queryKey: ['buyers'] })
+        } catch (buyerError) {
+          const reason = buyerError instanceof Error ? buyerError.message : 'Unknown error'
+          buyerSaveWarning = `Invoice generated, but the buyer could not be saved: ${reason}`
+        }
+      }
+
       setGeneratedResult(
         created.id,
         generated.docx_url ?? undefined,
         generated.pdf_url ?? undefined,
+        buyerSaveWarning,
       )
 
       setStep('done')
-      toast.success('Invoice generated successfully!')
+      if (buyerSaveWarning) {
+        toast.error(buyerSaveWarning)
+      } else {
+        toast.success('Invoice generated successfully!')
+      }
     } catch (err: any) {
       const msg = err.message || 'Invoice generation failed'
       setError(msg)

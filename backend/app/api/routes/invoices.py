@@ -21,10 +21,11 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func
 
 from app.db.database import get_db
-from app.models.models import Invoice, InvoiceItem, InvoiceStatus, TaxMode
+from app.models.models import Buyer, Invoice, InvoiceItem, InvoiceStatus, TaxMode
 from app.schemas.schemas import (
     InvoiceCreate, InvoiceUpdate, InvoiceResponse, InvoiceListItem,
-    GenerateInvoiceRequest, GenerateInvoiceResponse, DashboardStats
+    GenerateInvoiceRequest, GenerateInvoiceResponse, DashboardStats,
+    BuyerCreate, BuyerResponse,
 )
 from app.services.docx.generator import generate_docx_invoice
 from app.services.pdf.converter import convert_docx_to_pdf
@@ -337,6 +338,70 @@ def generate_invoice(request: GenerateInvoiceRequest, db: Session = Depends(get_
         success=success,
         message=message,
     )
+
+
+@router.post("/invoice/{invoice_id}/buyer", response_model=BuyerResponse)
+def save_generated_invoice_buyer(
+    invoice_id: int,
+    data: BuyerCreate,
+    db: Session = Depends(get_db),
+):
+    """Create or reuse a buyer and link it only after invoice export succeeds."""
+    invoice = db.query(Invoice).filter(Invoice.id == invoice_id).first()
+    if not invoice:
+        raise HTTPException(status_code=404, detail="Invoice not found")
+    if invoice.status != InvoiceStatus.EXPORTED:
+        raise HTTPException(
+            status_code=409,
+            detail="Buyer can only be saved after invoice generation succeeds",
+        )
+
+    name = data.name.strip()
+    if not name:
+        raise HTTPException(status_code=422, detail="Buyer name is required")
+
+    gst_number = data.gst_number.strip() if data.gst_number else None
+    matching_buyers = (
+        db.query(Buyer)
+        .filter(func.lower(func.trim(Buyer.name)) == name.lower())
+        .all()
+    )
+    buyer = None
+    if gst_number:
+        buyer = next(
+            (
+                candidate
+                for candidate in matching_buyers
+                if candidate.gst_number
+                and candidate.gst_number.strip().lower() == gst_number.lower()
+            ),
+            None,
+        )
+        if buyer is None:
+            buyer = next(
+                (candidate for candidate in matching_buyers if not candidate.gst_number),
+                None,
+            )
+            if buyer:
+                buyer.gst_number = gst_number
+    else:
+        buyer = matching_buyers[0] if matching_buyers else None
+
+    if buyer is None:
+        buyer = Buyer(
+            name=name,
+            gst_number=gst_number,
+            address=data.address,
+            email=data.email,
+            phone=data.phone,
+        )
+        db.add(buyer)
+        db.flush()
+
+    invoice.buyer_id = buyer.id
+    db.commit()
+    db.refresh(buyer)
+    return buyer
 
 
 @router.get("/invoice/{invoice_id}/download/{file_type}")

@@ -1,8 +1,9 @@
 'use client'
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import Link from 'next/link'
 import { useState } from 'react'
-import { Users, Plus, X, Phone, Mail, MapPin, Hash } from 'lucide-react'
+import { Users, Plus, X, Phone, Mail, MapPin, Hash, ChevronRight } from 'lucide-react'
 import { AppLayout } from '@/components/layout/AppLayout'
 import { getBuyers, createBuyer } from '@/lib/api'
 import type { Buyer, BuyerCreate } from '@/lib/api'
@@ -135,13 +136,23 @@ export default function BuyersPage() {
                     onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--bg-hover)')}
                     onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
                   >
-                    <td style={{ padding: '11px 16px', fontWeight: 600, color: 'var(--text-primary)' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <td style={{ padding: '11px 16px', fontWeight: 600 }}>
+                      <Link
+                        href={`/buyers/${buyer.id}`}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 8,
+                          color: 'var(--text-primary)',
+                          textDecoration: 'none',
+                        }}
+                      >
                         <div style={{ width: 28, height: 28, borderRadius: 6, background: 'var(--accent-muted)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                           <Users size={13} color="var(--accent)" />
                         </div>
                         {buyer.name}
-                      </div>
+                        <ChevronRight size={14} color="var(--text-muted)" />
+                      </Link>
                     </td>
                     <td style={{ padding: '11px 16px', color: buyer.gst_number ? 'var(--text-primary)' : 'var(--text-muted)', fontFamily: buyer.gst_number ? 'monospace' : 'inherit', fontSize: buyer.gst_number ? 12 : 13 }}>
                       {buyer.gst_number ? (

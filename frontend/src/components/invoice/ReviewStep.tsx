@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import {
   AlertTriangle,
   ChevronLeft,
@@ -10,9 +11,12 @@ import {
   TrendingUp,
   Package,
   Info,
+  Plus,
 } from 'lucide-react'
 import { useInvoiceStore } from '@/store/invoiceStore'
 import type { InvoiceItem } from '@/store/invoiceStore'
+import { getBuyers } from '@/lib/api'
+import type { Buyer } from '@/lib/api'
 import { formatCurrency, confidenceColor, confidenceLabel } from '@/lib/utils'
 
 const inputStyle: React.CSSProperties = {
@@ -49,6 +53,16 @@ function EditableCell({
 }
 
 export function ReviewStep() {
+  const [buyerSuggestionsOpen, setBuyerSuggestionsOpen] = useState(false)
+  const {
+    data: buyers = [],
+    isLoading: buyersLoading,
+    isError: buyersError,
+  } = useQuery<Buyer[]>({
+    queryKey: ['buyers'],
+    queryFn: getBuyers,
+    retry: 1,
+  })
   const {
     extractedItems,
     extractionConfidence,
@@ -62,11 +76,13 @@ export function ReviewStep() {
     invoiceNumber,
     invoiceDate,
     buyerName,
+    buyerId,
     buyerGst,
     getSubtotal,
     getTaxAmount,
     getTotalAmount,
     applyGlobalMargin,
+    addItem,
     setInvoiceField,
     setStep,
   } = useInvoiceStore()
@@ -86,6 +102,19 @@ export function ReviewStep() {
   }
 
   const confidenceCol = confidenceColor(extractionConfidence)
+  const matchingBuyers = buyerName.trim()
+    ? buyers.filter((buyer) =>
+        buyer.name.toLowerCase().includes(buyerName.trim().toLowerCase()) ||
+        buyer.gst_number?.toLowerCase().includes(buyerName.trim().toLowerCase())
+      ).slice(0, 8)
+    : []
+
+  const selectBuyer = (buyer: Buyer) => {
+    setInvoiceField('buyerId', buyer.id)
+    setInvoiceField('buyerName', buyer.name)
+    setInvoiceField('buyerGst', buyer.gst_number || '')
+    setBuyerSuggestionsOpen(false)
+  }
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
@@ -155,8 +184,6 @@ export function ReviewStep() {
           {[
             { label: 'Invoice Number', field: 'invoiceNumber' as const, value: invoiceNumber },
             { label: 'Invoice Date', field: 'invoiceDate' as const, value: invoiceDate, type: 'date' },
-            { label: 'Buyer Name', field: 'buyerName' as const, value: buyerName },
-            { label: 'Buyer GST', field: 'buyerGst' as const, value: buyerGst },
           ].map(({ label, field, value, type }) => (
             <div key={field}>
               <label style={{ fontSize: 11, color: 'var(--text-secondary)', display: 'block', marginBottom: 4 }}>
@@ -171,6 +198,98 @@ export function ReviewStep() {
               />
             </div>
           ))}
+          <div style={{ position: 'relative' }}>
+            <label style={{ fontSize: 11, color: 'var(--text-secondary)', display: 'block', marginBottom: 4 }}>
+              Buyer Name
+            </label>
+            <input
+              type="text"
+              value={buyerName}
+              onFocus={() => setBuyerSuggestionsOpen(true)}
+              onBlur={() => setBuyerSuggestionsOpen(false)}
+              onChange={(e) => {
+                if (buyerId !== null) setInvoiceField('buyerGst', '')
+                setInvoiceField('buyerId', null)
+                setInvoiceField('buyerName', e.target.value)
+                setBuyerSuggestionsOpen(true)
+              }}
+              style={{ ...inputStyle, padding: '7px 10px', fontSize: 13 }}
+              placeholder="Enter buyer name"
+              autoComplete="off"
+              role="combobox"
+              aria-autocomplete="list"
+              aria-expanded={buyerSuggestionsOpen && !!buyerName.trim()}
+              aria-controls="buyer-suggestions-list"
+            />
+            {buyerSuggestionsOpen && buyerName.trim() && (
+              <div
+                id="buyer-suggestions-list"
+                role="listbox"
+                style={{
+                  position: 'absolute',
+                  top: '100%',
+                  left: 0,
+                  right: 0,
+                  zIndex: 5,
+                  maxHeight: 220,
+                  overflowY: 'auto',
+                  background: 'var(--bg-card)',
+                  border: '1px solid var(--border)',
+                  borderRadius: 6,
+                  boxShadow: '0 8px 20px rgba(0,0,0,0.25)',
+                }}
+              >
+                {matchingBuyers.map((buyer) => (
+                  <button
+                    key={buyer.id}
+                    type="button"
+                    role="option"
+                    aria-selected={buyer.id === buyerId}
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={() => selectBuyer(buyer)}
+                    style={{
+                      width: '100%',
+                      padding: '9px 10px',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'flex-start',
+                      gap: 2,
+                      color: 'var(--text-primary)',
+                      background: 'transparent',
+                      border: 'none',
+                      borderBottom: '1px solid var(--border-subtle)',
+                      textAlign: 'left',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    <span style={{ fontSize: 12, fontWeight: 600 }}>{buyer.name}</span>
+                    {buyer.gst_number && (
+                      <span style={{ fontSize: 11, color: 'var(--text-secondary)' }}>{buyer.gst_number}</span>
+                    )}
+                  </button>
+                ))}
+                {!buyersLoading && matchingBuyers.length === 0 && (
+                  <p style={{ padding: '9px 10px', fontSize: 11, color: 'var(--text-secondary)' }}>
+                    {buyersError
+                      ? 'Saved buyers could not be loaded.'
+                      : 'No saved buyer found. This buyer will be saved after the invoice is generated.'}
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
+          <div>
+            <label style={{ fontSize: 11, color: 'var(--text-secondary)', display: 'block', marginBottom: 4 }}>
+              Buyer GST
+            </label>
+            <input
+              type="text"
+              value={buyerGst}
+              onChange={(e) => setInvoiceField('buyerGst', e.target.value)}
+              style={{ ...inputStyle, padding: '7px 10px', fontSize: 13 }}
+              placeholder="Enter buyer GST"
+            />
+          </div>
         </div>
 
         {/* Tax mode */}
@@ -277,11 +396,32 @@ export function ReviewStep() {
           overflow: 'hidden',
         }}
       >
-        <div style={{ padding: '14px 20px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: 8 }}>
-          <Package size={15} color="var(--text-secondary)" />
-          <span style={{ fontSize: 13, fontWeight: 600 }}>
-            {extractedItems.length} Extracted Items
-          </span>
+        <div style={{ padding: '14px 20px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <Package size={15} color="var(--text-secondary)" />
+            <span style={{ fontSize: 13, fontWeight: 600 }}>
+              {extractedItems.length} Items
+            </span>
+          </div>
+          <button
+            type="button"
+            onClick={addItem}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 6,
+              padding: '6px 10px',
+              background: 'var(--accent-muted)',
+              color: 'var(--accent)',
+              border: '1px solid var(--accent)',
+              borderRadius: 6,
+              cursor: 'pointer',
+              fontSize: 12,
+              fontWeight: 600,
+            }}
+          >
+            <Plus size={13} /> Add Row
+          </button>
         </div>
 
         <div style={{ overflowX: 'auto' }}>

@@ -5,7 +5,14 @@ import { useInvoiceStore } from '@/store/invoiceStore'
 import { getInvoiceDownloadUrl } from '@/lib/api'
 
 export function DoneStep() {
-  const { docxUrl, pdfUrl, invoiceNumber, generatedInvoiceId, reset } = useInvoiceStore()
+  const {
+    docxUrl,
+    pdfUrl,
+    invoiceNumber,
+    generatedInvoiceId,
+    generationWarning,
+    reset,
+  } = useInvoiceStore()
 
   /**
    * Build a download link. The backend returns URLs in two forms:
@@ -55,6 +62,24 @@ export function DoneStep() {
           {' '}has been saved and is ready to download.
         </p>
       </div>
+
+      {generationWarning && (
+        <div
+          role="alert"
+          style={{
+            width: '100%',
+            padding: '12px 16px',
+            background: 'var(--warning-muted)',
+            border: '1px solid var(--warning)',
+            borderRadius: 8,
+            color: 'var(--text-primary)',
+            fontSize: 13,
+            textAlign: 'left',
+          }}
+        >
+          {generationWarning}
+        </div>
+      )}
 
       {/* Download buttons */}
       {(hasDocx || hasPdf) ? (

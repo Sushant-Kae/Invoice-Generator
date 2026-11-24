@@ -111,8 +111,26 @@ export const getBuyers = async (): Promise<Buyer[]> => {
   return response.data;
 };
 
+export const getBuyer = async (id: number): Promise<Buyer> => {
+  const response = await api.get(`/buyers/${id}`);
+  return response.data;
+};
+
+export const getBuyerInvoices = async (id: number): Promise<InvoiceListItem[]> => {
+  const response = await api.get(`/buyers/${id}/invoices`);
+  return response.data;
+};
+
 export const createBuyer = async (data: BuyerCreate): Promise<Buyer> => {
   const response = await api.post("/buyers", data);
+  return response.data;
+};
+
+export const saveGeneratedInvoiceBuyer = async (
+  invoiceId: number,
+  data: BuyerCreate
+): Promise<Buyer> => {
+  const response = await api.post(`/invoice/${invoiceId}/buyer`, data);
   return response.data;
 };
 
